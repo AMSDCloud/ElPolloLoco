@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lista de precios</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Montserrat:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--red:#e32526;--navy:#263f5c;--bg:#fff;--ink:#1a1a1a;--line:#e3e6ea;--soft:#f4f6f8}
+*{box-sizing:border-box}
+body{margin:0;font-family:Montserrat,system-ui,sans-serif;color:var(--ink);background:var(--bg);padding-bottom:84px}
+header{text-align:center;padding:22px 16px 10px}
+h1{font-family:Anton,Impact,sans-serif;font-weight:400;color:var(--red);font-size:clamp(40px,12vw,64px);margin:0;letter-spacing:.5px;line-height:1}
+.sub{color:var(--navy);font-weight:700;margin:6px 0 0;font-size:14px}
+.tools{position:sticky;top:0;background:#fff;padding:10px 14px;border-bottom:1px solid var(--line);z-index:5}
+#q{width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:15px;background:var(--soft)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-top:10px;scrollbar-width:none}
+.chips button{flex:none;border:1px solid var(--navy);background:#fff;color:var(--navy);padding:7px 13px;border-radius:99px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.chips button.on{background:var(--navy);color:#fff}
+main{max-width:720px;margin:0 auto;padding:0 14px}
+h2{font-family:Anton,Impact,sans-serif;font-weight:400;font-size:24px;letter-spacing:.5px;background:var(--navy);color:#f3ead9;padding:8px 14px;margin:22px -14px 4px;display:inline-block;padding-right:28px}
+h2:nth-of-type(even){background:var(--red)}
+.item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.item .n{flex:1;font-weight:700;font-size:15px;line-height:1.3}
+.item .p{display:block;color:var(--red);font-size:14px;margin-top:2px}
+.add,.qty button{font:inherit;cursor:pointer}
+.add{background:var(--red);color:#fff;border:0;border-radius:10px;padding:10px 16px;font-weight:700;font-size:14px}
+.qty{display:flex;align-items:center;gap:2px;background:var(--soft);border-radius:10px}
+.qty button{width:38px;height:38px;border:0;background:none;font-size:20px;font-weight:700;color:var(--navy)}
+.qty b{min-width:26px;text-align:center}
+.msg{padding:40px 10px;text-align:center;color:#555}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--navy);outline-offset:2px}
+#bar{position:fixed;left:0;right:0;bottom:0;padding:12px 14px calc(12px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid var(--line);display:none;z-index:10}
+#bar button{width:100%;max-width:720px;margin:0 auto;display:flex;justify-content:space-between;background:var(--red);color:#fff;border:0;border-radius:12px;padding:15px 18px;font:inherit;font-weight:700;font-size:16px;cursor:pointer}
+#sheet{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;z-index:20;align-items:flex-end;justify-content:center}
+#sheet.open{display:flex}
+.panel{background:#fff;width:100%;max-width:720px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(40px);opacity:0}}
+@media(prefers-reduced-motion:reduce){.panel{animation:none}}
+.ph{display:flex;justify-content:space-between;align-items:center}
+.ph h3{margin:0;font-size:20px}
+.x{background:none;border:0;font-size:28px;cursor:pointer;color:var(--navy)}
+.line{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.line .n{flex:1;font-size:14px;font-weight:700}
+.line .n small{display:block;color:#555;font-weight:500}
+.total{display:flex;justify-content:space-between;font-size:20px;font-weight:700;padding:14px 0}
+.panel input,.panel textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;margin-bottom:8px}
+.send{width:100%;background:#25d366;color:#08331a;border:0;border-radius:12px;padding:15px;font:inherit;font-weight:700;font-size:16px;cursor:pointer}
+.clear{width:100%;background:none;border:0;color:var(--navy);padding:12px;font:inherit;font-weight:700;cursor:pointer}
+</style>
+</head>
+<body>
+<header>
+  <h1>LISTA DE PRECIOS</h1>
+  <p class="sub" id="fecha"></p>
+</header>
+<div class="tools">
+  <input id="q" type="search" placeholder="Buscar producto" aria-label="Buscar producto">
+  <div class="chips" id="chips"></div>
+</div>
+<main id="list"><p class="msg">Cargando productos…</p></main>
+
+<div id="bar"><button id="open"><span id="cnt"></span><span id="tot"></span></button></div>
+
+<div id="sheet" role="dialog" aria-modal="true" aria-label="Tu pedido">
+  <div class="panel">
+    <div class="ph"><h3>Tu pedido</h3><button class="x" id="close" aria-label="Cerrar">×</button></div>
+    <div id="lines"></div>
+    <div class="total"><span>Total</span><span id="sum"></span></div>
+    <input id="nombre" placeholder="Tu nombre o comercio" autocomplete="name">
+    <textarea id="nota" rows="2" placeholder="Notas (opcional): horario de entrega, dirección…"></textarea>
+    <button class="send" id="send">Enviar pedido por WhatsApp</button>
+    <button class="clear" id="clear">Vaciar pedido</button>
+  </div>
+</div>
+
+<script>
+/* ====== CONFIGURACIÓN ====== */
+const CONFIG = {
+  whatsapp: '5492914407418',            // 54 (Argentina) + 9 + 291 + número
+  // URL del Google Sheet publicado como CSV. Si queda vacío, usa productos.csv local.
+  sheetCsvUrl: '',
+  fecha: ''                              // opcional, ej: 'Actualizado 23/09'
+};
+/* =========================== */
+
+const $ = id => document.getElementById(id);
+const money = n => '$' + Math.round(n).toLocaleString('es-AR');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm = s => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+
+let products = [], cart = {}, cat = 'Todos';
+try { cart = JSON.parse(localStorage.getItem('cart') || '{}'); } catch (e) {}
+const save = () => { try { localStorage.setItem('cart', JSON.stringify(cart)); } catch (e) {} };
+
+function parseCSV(t) {
+  const rows = []; let r = [], c = '', q = false;
+  for (let i = 0; i < t.length; i++) {
+    const ch = t[i];
+    if (q) { if (ch === '"') { if (t[i+1] === '"') { c += '"'; i++; } else q = false; } else c += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === ',') { r.push(c); c = ''; }
+    else if (ch === '\n' || ch === '\r') { if (ch === '\r' && t[i+1] === '\n') i++; r.push(c); rows.push(r); r = []; c = ''; }
+    else c += ch;
+  }
+  if (c || r.length) { r.push(c); rows.push(r); }
+  return rows;
+}
+
+async function load() {
+  try {
+    const url = CONFIG.sheetCsvUrl ? CONFIG.sheetCsvUrl + (CONFIG.sheetCsvUrl.includes('?') ? '&' : '?') + 't=' + Date.now() : 'productos.csv';
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(res.status);
+    const rows = parseCSV(await res.text());
+    const head = rows.shift().map(norm);
+    const ix = k => head.indexOf(k);
+    products = rows.map(r => ({
+      cat: (r[ix('categoria')] || '').trim(),
+      name: (r[ix('producto')] || '').trim(),
+      price: parseInt((r[ix('precio')] || '').replace(/\D/g, ''), 10) || 0,
+      on: ix('activo') < 0 || !['no', 'n', '0', 'false'].includes(norm(r[ix('activo')] || 'si'))
+    })).filter(p => p.name && p.on && p.price > 0);
+    products.forEach(p => p.key = p.cat + '|' + p.name);
+    $('fecha').textContent = CONFIG.fecha;
+    renderChips(); renderList(); renderCart();
+  } catch (e) {
+    $('list').innerHTML = '<p class="msg">No se pudo cargar la lista de precios. Revisá tu conexión y recargá la página.</p>';
+  }
+}
+
+function renderChips() {
+  const cats = ['Todos', ...new Set(products.map(p => p.cat))];
+  $('chips').innerHTML = cats.map(c => `<button class="${c === cat ? 'on' : ''}" data-c="${esc(c)}">${esc(c)}</button>`).join('');
+}
+
+function ctrl(p, i) {
+  const n = cart[p.key] || 0;
+  return n
+    ? `<div class="qty"><button data-a="-" data-i="${i}" aria-label="Quitar uno">−</button><b>${n}</b><button data-a="+" data-i="${i}" aria-label="Agregar uno">+</button></div>`
+    : `<button class="add" data-a="+" data-i="${i}">Agregar</button>`;
+}
+
+function renderList() {
+  const term = norm($('q').value);
+  let html = '', last = null;
+  products.forEach((p, i) => {
+    if ((cat !== 'Todos' && p.cat !== cat) || (term && !norm(p.name + ' ' + p.cat).includes(term))) return;
+    if (p.cat !== last) { html += `<h2>${esc(p.cat)}</h2>`; last = p.cat; }
+    html += `<div class="item"><div class="n">${esc(p.name)}<span class="p">${money(p.price)}</span></div>${ctrl(p, i)}</div>`;
+  });
+  $('list').innerHTML = html || '<p class="msg">No encontramos productos con esa búsqueda.</p>';
+}
+
+function lines() {
+  return products.filter(p => cart[p.key]).map(p => ({ p, n: cart[p.key], sub: cart[p.key] * p.price }));
+}
+
+function renderCart() {
+  const L = lines(), total = L.reduce((a, l) => a + l.sub, 0), count = L.reduce((a, l) => a + l.n, 0);
+  $('bar').style.display = count ? 'block' : 'none';
+  $('cnt').textContent = `Ver pedido (${count})`;
+  $('tot').textContent = money(total);
+  $('sum').textContent = money(total);
+  $('lines').innerHTML = L.length ? L.map(l => {
+    const i = products.indexOf(l.p);
+    return `<div class="line"><div class="n">${esc(l.p.name)}<small>${money(l.p.price)} c/u · ${money(l.sub)}</small></div><div class="qty"><button data-a="-" data-i="${i}" aria-label="Quitar uno">−</button><b>${l.n}</b><button data-a="+" data-i="${i}" aria-label="Agregar uno">+</button></div></div>`;
+  }).join('') : '<p class="msg">Tu pedido está vacío.</p>';
+  if (!L.length) $('sheet').classList.remove('open');
+}
+
+function change(i, d) {
+  const p = products[i]; if (!p) return;
+  const n = (cart[p.key] || 0) + d;
+  if (n > 0) cart[p.key] = n; else delete cart[p.key];
+  save(); renderList(); renderCart();
+}
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.a) change(+b.dataset.i, b.dataset.a === '+' ? 1 : -1);
+  else if (b.dataset.c) { cat = b.dataset.c; renderChips(); renderList(); }
+});
+$('q').addEventListener('input', renderList);
+$('open').onclick = () => $('sheet').classList.add('open');
+$('close').onclick = () => $('sheet').classList.remove('open');
+$('sheet').addEventListener('click', e => { if (e.target.id === 'sheet') $('sheet').classList.remove('open'); });
+$('clear').onclick = () => { if (confirm('¿Vaciar el pedido?')) { cart = {}; save(); renderList(); renderCart(); } };
+
+$('send').onclick = () => {
+  const L = lines(); if (!L.length) return;
+  const total = L.reduce((a, l) => a + l.sub, 0);
+  const nombre = $('nombre').value.trim(), nota = $('nota').value.trim();
+  let t = '*Nuevo pedido*\n';
+  if (nombre) t += `Cliente: ${nombre}\n`;
+  t += '\n' + L.map(l => `• ${l.n} x ${l.p.name} — ${money(l.sub)}`).join('\n');
+  t += `\n\n*Total: ${money(total)}*`;
+  if (nota) t += `\n\nNotas: ${nota}`;
+  window.open(`https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(t)}`, '_blank');
+};
+
+load();
+</script>
+</body>
+</html>
